@@ -44,10 +44,6 @@ const todos = [
 ];
 
 
-
-
-
-
 //Request logger
 const requestLogger = (req, res, next) => {
     const timeStamp = new Date().toISOString();
@@ -58,10 +54,65 @@ const requestLogger = (req, res, next) => {
     }
 
     next()
-}
+};
+
+//Validation
+const todoValidation = [
+    body('task')
+        .isLength({ min: 3 })
+        .withMessage('Task must be at least 3 characters long'),
+    
+    body('description')
+        .isLength({ min: 10 })
+        .withMessage('Description must be at least 10 characters long'),
+    
+    body('priority')
+        .isIn(['low', 'medium', 'high'])
+        .withMessage('Priority must be low, medium, or high'),
+    
+    body('dueDate')
+        .isISO8601()
+        .withMessage('Due date must be a valid date (YYYY-MM-DD)'),
+    
+    body('tags')
+        .isArray({ min: 1 })
+        .withMessage('Tags must be an array with at least one tag'),
+    
+    body('completed')
+        .optional()
+        .isBoolean()
+        .withMessage('Completed must be true or false')
+];
+
+
+
+const handleValidationErrors = (req, res, next) => {
+    const errors = validationResult(req);
+    
+    if (!errors.isEmpty()) {
+        const errorMessages = errors.array().map(error => error.msg);
+        
+        return res.status(400).json({
+        error: 'Validation failed',
+        messages: errorMessages
+        });
+    }
+    
+    // Set default value for completed if not provided
+    if (req.body.completed === undefined) {
+        req.body.completed = false;
+    }
+    
+    next();
+};
+
+
 
 // Built-in middleware for parsing JSON
 app.use(express.json());
+
+// Call the request logger
+app.use(requestLogger)
 
 // Routes
 app.get('/api/todos', (req, res) => {
@@ -79,7 +130,7 @@ app.get('/api/todos/:id', (req, res) => {
     }
 });
 
-app.post('/api/todos', (req, res) => {
+app.post('/api/todos', todoValidation, handleValidationErrors, (req, res) => {
     const { task, description, priority, dueDate, tags } = req.body;
   
     const newTodo = {
@@ -96,7 +147,7 @@ app.post('/api/todos', (req, res) => {
     res.status(201).json(newTodo);
 });
 
-app.put('/api/todos/:id', (req, res) => {
+app.put('/api/todos/:id', todoValidation, handleValidationErrors, (req, res) => {
     const todoId = parseInt(req.params.id);
     const { task, description, priority, completed, dueDate, tags } = req.body;
     
