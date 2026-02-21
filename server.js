@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const port = 3000;
+const { body, validationResult } = require('express-validator');
 
 // Sample todo data
 const todos = [
@@ -41,6 +42,23 @@ const todos = [
         tags: ["meeting", "team"]
     }
 ];
+
+
+
+
+
+
+//Request logger
+const requestLogger = (req, res, next) => {
+    const timeStamp = new Date().toISOString();
+    console.log(`[${timeStamp}] ${req.method} ${req.originalUrl}`)
+
+    if(req.method === "POST" || req.method === "PUT") {
+        console.log("Request Body", JSON.stringify(req.body, null, 2))
+    }
+
+    next()
+}
 
 // Built-in middleware for parsing JSON
 app.use(express.json());
@@ -116,3 +134,7 @@ app.delete('/api/todos/:id', (req, res) => {
 app.listen(port, () => {
     console.log(`Todo API running at http://localhost:${port}`);
 });
+
+
+
+
